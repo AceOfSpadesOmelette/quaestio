@@ -1,17 +1,17 @@
 import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { TFile } from "obsidian";
-import { updateOptionMarkers } from "./serialize-quaestio";
+import { updateQuaestioBody } from "./serialize-quaestio";
 
 /**
- * Write current option selections back into the quaestio fence.
- * Only [ ] / [x] markers on option lines are changed.
- * Skips vault.process when markers are already up to date (avoids remount flicker).
+ * Write option selections and answer-revealed back into the quaestio fence.
+ * Skips vault.process when the body is already up to date (avoids remount flicker).
  */
 export async function persistSelections(
 	app: App,
 	ctx: MarkdownPostProcessorContext,
 	el: HTMLElement,
 	selectedByIndex: Record<number, boolean>,
+	answerRevealed: boolean,
 ): Promise<void> {
 	const section = ctx.getSectionInfo(el);
 	if (!section) return;
@@ -35,7 +35,11 @@ export async function persistSelections(
 
 		const bodyLines = lines.slice(bodyStart, bodyEnd);
 		const body = bodyLines.join("\n");
-		const updatedBody = updateOptionMarkers(body, selectedByIndex);
+		const updatedBody = updateQuaestioBody(
+			body,
+			selectedByIndex,
+			answerRevealed,
+		);
 
 		// No-op write → skip so Obsidian does not remount the widget
 		if (updatedBody === body) {

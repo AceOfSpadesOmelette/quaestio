@@ -17,6 +17,8 @@ export interface QuaestioQuestion {
 	correctAnswerRaw: string;
 	/** Display-only Explanation body */
 	explanation: string;
+	/** Whether Correct Answer / Explanation panel is open */
+	answerRevealed: boolean;
 }
 
 export type GradeResult = "correct" | "incorrect" | "unanswered";

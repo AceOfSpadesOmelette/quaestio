@@ -7,6 +7,7 @@ const QUESTION_TITLE_RE = /^question-title:\s*(.*)$/i;
 const QUESTION_STEM_RE = /^question-stem:\s*(.*)$/i;
 const CORRECT_ANSWER_FLAG_RE = /^correct-answer:\s*(.*)$/i;
 const EXPLANATION_FLAG_RE = /^explanation:\s*(.*)$/i;
+const ANSWER_REVEALED_RE = /^answer-revealed:\s*(.*)$/i;
 
 /** Any `key: value` line that looks like a flag (for unknown-flag errors). */
 const ANY_FLAG_RE = /^([a-z0-9-]+)\s*:\s*(.*)$/i;
@@ -18,6 +19,7 @@ const KNOWN_FLAG_KEYS = new Set([
 	"question-stem",
 	"correct-answer",
 	"explanation",
+	"answer-revealed",
 ]);
 
 type ContentFields = {
@@ -25,7 +27,16 @@ type ContentFields = {
 	questionStem: string | null;
 	correctAnswer: string | null;
 	explanation: string | null;
+	answerRevealed: boolean | null;
 };
+
+type AllowedFlag =
+	| "machine"
+	| "title"
+	| "stem"
+	| "correct-answer"
+	| "explanation"
+	| "answer-revealed";
 
 function parseCorrectIndexes(raw: string): number[] | null {
 	const text = raw.trim();
@@ -68,7 +79,8 @@ function isKnownFlagLine(line: string): boolean {
 		QUESTION_TITLE_RE.test(trimmed) ||
 		QUESTION_STEM_RE.test(trimmed) ||
 		CORRECT_ANSWER_FLAG_RE.test(trimmed) ||
-		EXPLANATION_FLAG_RE.test(trimmed)
+		EXPLANATION_FLAG_RE.test(trimmed) ||
+		ANSWER_REVEALED_RE.test(trimmed)
 	);
 }
 
@@ -129,7 +141,7 @@ function parseFlagAt(
 	fields: ContentFields,
 	numberOfCorrectAnswers: number | null,
 	correctIndexes: number[] | null,
-	allowed: Set<"machine" | "title" | "stem" | "correct-answer" | "explanation">,
+	allowed: Set<AllowedFlag>,
 ): FlagParseResult {
 	const trimmed = (lines[i] ?? "").trim();
 
@@ -170,6 +182,30 @@ function parseFlagAt(
 			fields,
 			numberOfCorrectAnswers,
 			correctIndexes: parsed,
+			next: i + 1,
+		};
+	}
+
+	const revealedMatch = trimmed.match(ANSWER_REVEALED_RE);
+	if (revealedMatch) {
+		if (!allowed.has("answer-revealed")) {
+			return { ok: false, error: "Unexpected answer-revealed flag." };
+		}
+		if (fields.answerRevealed !== null) {
+			return { ok: false, error: "Duplicate flag: answer-revealed" };
+		}
+		const raw = (revealedMatch[1] ?? "").trim().toLowerCase();
+		if (raw !== "true" && raw !== "false") {
+			return {
+				ok: false,
+				error: "Invalid answer-revealed. Use true or false.",
+			};
+		}
+		return {
+			ok: true,
+			fields: { ...fields, answerRevealed: raw === "true" },
+			numberOfCorrectAnswers,
+			correctIndexes,
 			next: i + 1,
 		};
 	}
@@ -323,15 +359,17 @@ export function parseQuaestio(source: string): ParseResult {
 		questionStem: null,
 		correctAnswer: null,
 		explanation: null,
+		answerRevealed: null,
 	};
 
-	const headerAllowed = new Set([
+	const headerAllowed = new Set<AllowedFlag>([
 		"machine",
 		"title",
 		"stem",
 		"correct-answer",
 		"explanation",
-	] as const);
+		"answer-revealed",
+	]);
 
 	// Header: flags until first option line
 	while (i < lines.length) {
@@ -350,7 +388,7 @@ export function parseQuaestio(source: string): ParseResult {
 			fields,
 			numberOfCorrectAnswers,
 			correctIndexes,
-			headerAllowed as Set<"machine" | "title" | "stem" | "correct-answer" | "explanation">,
+			headerAllowed,
 		);
 		if (!result.ok) {
 			return { ok: false, error: result.error };
@@ -432,11 +470,12 @@ export function parseQuaestio(source: string): ParseResult {
 		i++;
 	}
 
-	// Trailing: only correct-answer / explanation (if not already set)
-	const trailingAllowed = new Set([
+	// Trailing: correct-answer / explanation / answer-revealed (if not already set)
+	const trailingAllowed = new Set<AllowedFlag>([
 		"correct-answer",
 		"explanation",
-	] as const);
+		"answer-revealed",
+	]);
 
 	while (i < lines.length) {
 		const trimmed = (lines[i] ?? "").trim();
@@ -451,7 +490,7 @@ export function parseQuaestio(source: string): ParseResult {
 			fields,
 			numberOfCorrectAnswers,
 			correctIndexes,
-			trailingAllowed as Set<"machine" | "title" | "stem" | "correct-answer" | "explanation">,
+			trailingAllowed,
 		);
 		if (!result.ok) {
 			return { ok: false, error: result.error };
@@ -477,6 +516,7 @@ export function parseQuaestio(source: string): ParseResult {
 		options,
 		correctAnswerRaw: (fields.correctAnswer ?? "").trim(),
 		explanation: (fields.explanation ?? "").trim(),
+		answerRevealed: fields.answerRevealed === true,
 	};
 
 	return { ok: true, question };

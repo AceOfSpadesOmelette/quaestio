@@ -38,7 +38,9 @@ const uiCache = new Map<string, UiCache>();
 function blockKey(ctx: MarkdownPostProcessorContext, source: string): string {
 	const normalized = source
 		.replace(/\r\n/g, "\n")
-		.replace(/^\[([ xX]+)\]/gm, "[ ]");
+		.replace(/^\[([ xX]+)\]/gm, "[ ]")
+		// Keep cache identity stable when answer-revealed is written
+		.replace(/^answer-revealed:\s*(true|false)\s*$/gim, "answer-revealed: false");
 	return `${ctx.sourcePath}\0${normalized}`;
 }
 
@@ -461,10 +463,18 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.persisting = true;
 		const map = this.selectedMap();
 		this.cacheSelections();
+		this.cacheUiState();
 		try {
-			await persistSelections(this.app, this.ctx, this.root, map);
+			await persistSelections(
+				this.app,
+				this.ctx,
+				this.root,
+				map,
+				this.revealed,
+			);
 			if (!this.destroyed) {
 				this.dirty = false;
+				this.question.answerRevealed = this.revealed;
 			}
 		} finally {
 			this.persisting = false;
@@ -509,7 +519,8 @@ class QuaestioWidget extends MarkdownRenderChild {
 		} else {
 			this.cacheUiState();
 		}
-		// User finished an attempt — safe to remount
+		// Persist selections and answer-revealed (panel opens on Check)
+		this.dirty = true;
 		void this.flushNow();
 	}
 
@@ -521,6 +532,8 @@ class QuaestioWidget extends MarkdownRenderChild {
 			this.clearOptionFeedback();
 			this.updateOptionVisuals();
 		}
+		this.dirty = true;
+		void this.flushNow();
 	}
 
 	/** Clear selections, grading, and reveal panel back to a fresh quaestio. */
@@ -542,6 +555,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 
 	private setRevealed(revealed: boolean): void {
 		this.revealed = revealed;
+		this.question.answerRevealed = revealed;
 		if (this.revealEl) {
 			if (revealed) {
 				this.revealEl.removeAttribute("hidden");
@@ -647,21 +661,28 @@ class QuaestioWidget extends MarkdownRenderChild {
 		});
 	}
 
-	/** Apply cached Show answer / Check UI after a remount. */
+	/** Apply session cache or note flag after a remount / first open. */
 	private restoreUiState(): void {
 		const cached = uiCache.get(this.key);
-		if (!cached) return;
+		if (cached) {
+			this.graded = cached.graded;
+			this.lastResult = cached.result;
 
-		this.graded = cached.graded;
-		this.lastResult = cached.result;
+			if (cached.result && cached.graded) {
+				this.showResult(cached.result);
+			}
 
-		if (cached.result && cached.graded) {
-			this.showResult(cached.result);
+			this.setRevealed(cached.revealed);
+
+			if (this.revealed || this.graded) {
+				this.applyFeedback();
+			}
+			return;
 		}
 
-		this.setRevealed(cached.revealed);
-
-		if (this.revealed || this.graded) {
+		// Fresh open: restore panel from answer-revealed in the note
+		if (this.question.answerRevealed) {
+			this.setRevealed(true);
 			this.applyFeedback();
 		}
 	}

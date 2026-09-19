@@ -1,6 +1,6 @@
 # Quaestio
 
-Turn `quaestio` code blocks into interactive multiple-choice questions in Obsidian **Reading view** (and Live Preview). Selections are saved back into the note as `[x]` markers.
+Turn `quaestio` code blocks into interactive multiple-choice questions in Obsidian **Reading view** (and Live Preview). Selections are saved as `[x]` markers; Show/Hide answer is saved as `answer-revealed: true|false`.
 
 ## Install
 
@@ -39,8 +39,9 @@ explanation: 1 plus 1 is equal to 2.
 | `question-stem:` | yes | Question body |
 | `correct-answer:` | no | Body under the UI label **Correct Answer:** |
 | `explanation:` | no | Body under the UI label **Explanation:** |
+| `answer-revealed: true\|false` | no | Whether the answer panel is open (`false` / omitted = hidden) |
 
-Machine flags and content flags may appear in any order **before** the first option line. `correct-answer` and `explanation` may also appear **after** the options. Each flag key may appear only once.
+Machine flags and content flags may appear in any order **before** the first option line. `correct-answer`, `explanation`, and `answer-revealed` may also appear **after** the options. Each flag key may appear only once.
 
 Inline values and multi-line bodies both work:
 
@@ -108,7 +109,7 @@ explanation: 7 is prime.
 1. Open the note in **Reading view**.
 2. Select options — hollow circle = empty, filled circle = selected. Single-select: click again to clear.
 3. **Check** — grades your selection and opens the answer panel if hidden.
-4. **Show answer** / **Hide answer** — toggles Correct Answer and Explanation.
-5. **Reset** — clears selections, grading highlights, and the answer panel (also clears `[x]` in the note).
+4. **Show answer** / **Hide answer** — toggles Correct Answer and Explanation (saved in the note as `answer-revealed`).
+5. **Reset** — clears selections, grading highlights, and the answer panel (also clears `[x]` and sets `answer-revealed: false`).
 
 Title, stem, options, Correct Answer body, and Explanation body support markdown; flag **names** never appear in Reading view.
