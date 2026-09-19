@@ -1,0 +1,210 @@
+.quaestio-block {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 1em 1.1em;
+	margin: 0.75em 0;
+	background: var(--background-secondary);
+}
+
+.quaestio-error {
+	margin: 0;
+	color: var(--text-error);
+	white-space: pre-wrap;
+}
+
+.quaestio-title {
+	font-weight: 700;
+	font-size: 1.1em;
+	margin-bottom: 0.4em;
+	color: var(--text-normal);
+}
+
+.quaestio-title p {
+	margin: 0;
+	font-weight: 700;
+}
+
+.quaestio-stem {
+	margin-bottom: 0.85em;
+	color: var(--text-normal);
+}
+
+.quaestio-stem p {
+	margin: 0.25em 0;
+}
+
+.quaestio-stem p:first-child {
+	margin-top: 0;
+}
+
+.quaestio-stem p:last-child {
+	margin-bottom: 0;
+}
+
+.quaestio-options {
+	display: flex;
+	flex-direction: column;
+	gap: 0.4em;
+	margin-bottom: 0.85em;
+}
+
+.quaestio-option {
+	display: flex;
+	align-items: center;
+	gap: 0.55em;
+	width: 100%;
+	text-align: left;
+	padding: 0.55em 0.7em;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	cursor: pointer;
+	font: inherit;
+	line-height: 1.4;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: manipulation;
+	transition:
+		border-color 0.12s ease,
+		background-color 0.12s ease;
+}
+
+.quaestio-option:hover {
+	border-color: var(--interactive-accent);
+	background: var(--background-modifier-hover);
+}
+
+.quaestio-option.is-selected {
+	border-color: var(--interactive-accent);
+	background: var(--background-modifier-hover);
+}
+
+.quaestio-option.is-correct {
+	border-color: var(--color-green, #4caf50);
+	background: color-mix(in srgb, var(--color-green, #4caf50) 12%, transparent);
+}
+
+.quaestio-option.is-incorrect {
+	border-color: var(--color-red, #e74c3c);
+	background: color-mix(in srgb, var(--color-red, #e74c3c) 12%, transparent);
+}
+
+.quaestio-option.is-missed {
+	border-color: var(--color-green, #4caf50);
+	border-style: dashed;
+}
+
+.quaestio-option-marker {
+	flex: 0 0 auto;
+	display: inline-block;
+	width: 0.95em;
+	height: 0.95em;
+	border-radius: 50%;
+	border: 2px solid var(--text-muted);
+	background: transparent;
+	box-sizing: border-box;
+}
+
+.quaestio-option.is-selected .quaestio-option-marker,
+.quaestio-option-marker.is-filled {
+	border-color: var(--text-normal);
+	background: var(--text-normal);
+}
+
+.quaestio-option-label {
+	flex: 1 1 auto;
+	min-width: 0;
+	line-height: 1.4;
+}
+
+.quaestio-option-label p {
+	margin: 0;
+	line-height: 1.4;
+}
+
+.quaestio-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+	margin-bottom: 0.6em;
+}
+
+.quaestio-btn {
+	padding: 0.4em 0.9em;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--interactive-normal);
+	color: var(--text-normal);
+	cursor: pointer;
+	font: inherit;
+	touch-action: manipulation;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.quaestio-btn:hover {
+	background: var(--interactive-hover);
+}
+
+.quaestio-btn-check {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent, #fff);
+}
+
+.quaestio-btn-check:hover {
+	background: var(--interactive-accent-hover, var(--interactive-accent));
+}
+
+.quaestio-result {
+	font-weight: 600;
+	margin-bottom: 0.55em;
+}
+
+.quaestio-result.is-correct {
+	color: var(--color-green, #4caf50);
+}
+
+.quaestio-result.is-incorrect {
+	color: var(--color-red, #e74c3c);
+}
+
+.quaestio-result.is-unanswered {
+	color: #e6a23c;
+}
+
+.quaestio-reveal {
+	margin-top: 0.35em;
+	padding-top: 0.55em;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.quaestio-section-label {
+	font-style: italic;
+	text-decoration: underline;
+	margin-top: 0.45em;
+	margin-bottom: 0.2em;
+	color: var(--text-muted);
+}
+
+.quaestio-correct-answer,
+.quaestio-explanation {
+	color: var(--text-normal);
+	margin-bottom: 0.35em;
+}
+
+.quaestio-correct-answer p,
+.quaestio-explanation p {
+	margin: 0.25em 0;
+}
+
+.quaestio-correct-answer p:first-child,
+.quaestio-explanation p:first-child {
+	margin-top: 0;
+}
+
+.quaestio-correct-answer p:last-child,
+.quaestio-explanation p:last-child {
+	margin-bottom: 0;
+}
