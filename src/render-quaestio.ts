@@ -193,10 +193,10 @@ class QuaestioWidget extends MarkdownRenderChild {
 	private graded = false;
 	private lastResult: GradeResult | null = null;
 	private idleTimer: number | null = null;
-	private optionEls: HTMLButtonElement[] = [];
+	private optionEls: HTMLElement[] = [];
 	private resultEl: HTMLElement | null = null;
 	private revealEl: HTMLElement | null = null;
-	private showBtn: HTMLButtonElement | null = null;
+	private showBtn: HTMLElement | null = null;
 	private multi = false;
 	private destroyed = false;
 	/** True when local selections may be ahead of the file. */
@@ -302,10 +302,13 @@ class QuaestioWidget extends MarkdownRenderChild {
 		});
 
 		for (const opt of this.question.options) {
-			const btn = optionsWrap.createEl("button", {
+			// Use div (not button) so Obsidian theme button height/overflow rules
+			// cannot clip wrapped option text.
+			const btn = optionsWrap.createEl("div", {
 				cls: "quaestio-option",
 				attr: {
-					type: "button",
+					role: "button",
+					tabindex: "0",
 					"data-index": String(opt.index),
 					"aria-pressed": opt.selected ? "true" : "false",
 				},

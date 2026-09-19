@@ -48,24 +48,30 @@
 	margin-bottom: 0.85em;
 }
 
+/* Beat Obsidian theme `button` rules that fix height and clip wrapped text */
+button.quaestio-option,
 .quaestio-option {
-	display: flex;
+	display: flex !important;
 	align-items: flex-start;
 	gap: 0.55em;
 	width: 100%;
 	max-width: 100%;
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: none !important;
 	box-sizing: border-box;
 	text-align: left;
-	padding: 0.55em 0.7em;
+	padding: 0.55em 0.7em !important;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	background: var(--background-primary);
 	color: var(--text-normal);
 	cursor: pointer;
 	font: inherit;
-	line-height: 1.4;
-	white-space: normal;
-	overflow: visible;
+	line-height: 1.4 !important;
+	white-space: normal !important;
+	overflow: visible !important;
+	text-overflow: unset !important;
 	user-select: none;
 	-webkit-user-select: none;
 	touch-action: manipulation;
@@ -121,17 +127,22 @@
 	flex: 1 1 auto;
 	min-width: 0;
 	max-width: 100%;
+	height: auto !important;
+	overflow: visible !important;
 	line-height: 1.4;
-	white-space: normal;
-	overflow-wrap: anywhere;
+	white-space: normal !important;
+	overflow-wrap: break-word;
+	word-wrap: break-word;
 	word-break: break-word;
 }
 
-.quaestio-option-label p {
+.quaestio-option-label p,
+.quaestio-option-label li,
+.quaestio-option-label span {
 	margin: 0;
 	line-height: 1.4;
-	white-space: normal;
-	overflow-wrap: anywhere;
+	white-space: normal !important;
+	overflow-wrap: break-word;
 	word-break: break-word;
 }
 
