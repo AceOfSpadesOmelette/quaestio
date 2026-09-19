@@ -20,6 +20,18 @@ const liveWidgets = new Set<QuaestioWidget>();
 const selectionCache = new Map<string, Record<number, boolean>>();
 
 /**
+ * Reveal / grade UI state per block. Survives Live Preview remounts that wipe
+ * the widget instance (Show answer / Check / Reset would otherwise flash away).
+ */
+interface UiCache {
+	revealed: boolean;
+	graded: boolean;
+	result: GradeResult | null;
+}
+
+const uiCache = new Map<string, UiCache>();
+
+/**
  * Stable identity for a quaestio block across [ ]/[x] marker changes.
  * Uses sourcePath + source with option markers normalized.
  */
@@ -179,6 +191,7 @@ async function renderMd(
 class QuaestioWidget extends MarkdownRenderChild {
 	private revealed = false;
 	private graded = false;
+	private lastResult: GradeResult | null = null;
 	private idleTimer: number | null = null;
 	private optionEls: HTMLButtonElement[] = [];
 	private resultEl: HTMLElement | null = null;
@@ -357,6 +370,10 @@ class QuaestioWidget extends MarkdownRenderChild {
 			cls: "quaestio-explanation",
 		});
 
+		// Restore Show answer / Check / result UI before async markdown fill
+		// so a remount does not flash the panel away.
+		this.restoreUiState();
+
 		// Fill markdown content asynchronously; options are already interactive
 		await renderMd(
 			this.app,
@@ -403,6 +420,11 @@ class QuaestioWidget extends MarkdownRenderChild {
 			explBody,
 			this.ctx.sourcePath,
 		);
+
+		// Re-apply after markdown fill (labels replaced but feedback classes stay on buttons)
+		if (!this.destroyed && (this.revealed || this.graded)) {
+			this.applyFeedback();
+		}
 	}
 
 	/** Called from document-level capture pointerdown. */
@@ -463,10 +485,12 @@ class QuaestioWidget extends MarkdownRenderChild {
 
 		this.dirty = true;
 		this.graded = false;
+		this.lastResult = null;
 		this.clearOptionFeedback();
 		this.updateOptionVisuals();
 		this.hideResult();
 		this.cacheSelections();
+		this.cacheUiState();
 		// Do NOT persist on every click — schedule idle flush only
 		this.scheduleIdlePersist();
 	}
@@ -474,10 +498,13 @@ class QuaestioWidget extends MarkdownRenderChild {
 	private onCheck(): void {
 		const result = gradeSelection(this.question);
 		this.graded = true;
+		this.lastResult = result;
 		this.applyFeedback();
 		this.showResult(result);
 		if (!this.revealed) {
 			this.setRevealed(true);
+		} else {
+			this.cacheUiState();
 		}
 		// User finished an attempt — safe to remount
 		void this.flushNow();
@@ -499,12 +526,14 @@ class QuaestioWidget extends MarkdownRenderChild {
 			opt.selected = false;
 		}
 		this.graded = false;
+		this.lastResult = null;
 		this.dirty = true;
 		this.clearOptionFeedback();
 		this.updateOptionVisuals();
 		this.hideResult();
 		this.setRevealed(false);
 		this.cacheSelections();
+		this.cacheUiState();
 		void this.flushNow();
 	}
 
@@ -520,6 +549,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		if (this.showBtn) {
 			this.showBtn.setText(revealed ? "Hide answer" : "Show answer");
 		}
+		this.cacheUiState();
 	}
 
 	private updateOptionVisuals(): void {
@@ -604,6 +634,33 @@ class QuaestioWidget extends MarkdownRenderChild {
 
 	private cacheSelections(): void {
 		selectionCache.set(this.key, this.selectedMap());
+	}
+
+	private cacheUiState(): void {
+		uiCache.set(this.key, {
+			revealed: this.revealed,
+			graded: this.graded,
+			result: this.lastResult,
+		});
+	}
+
+	/** Apply cached Show answer / Check UI after a remount. */
+	private restoreUiState(): void {
+		const cached = uiCache.get(this.key);
+		if (!cached) return;
+
+		this.graded = cached.graded;
+		this.lastResult = cached.result;
+
+		if (cached.result && cached.graded) {
+			this.showResult(cached.result);
+		}
+
+		this.setRevealed(cached.revealed);
+
+		if (this.revealed || this.graded) {
+			this.applyFeedback();
+		}
 	}
 
 	private clearIdleTimer(): void {

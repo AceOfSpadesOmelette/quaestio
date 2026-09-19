@@ -1,6 +1,6 @@
 {
 	"name": "quaestio",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Quaestio: interactive MCQ blocks for Obsidian Reading view.",
 	"main": "main.js",
 	"type": "module",
