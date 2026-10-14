@@ -27,6 +27,7 @@ interface UiCache {
 	revealed: boolean;
 	graded: boolean;
 	result: GradeResult | null;
+	choicesLocked: boolean;
 }
 
 const uiCache = new Map<string, UiCache>();
@@ -39,8 +40,8 @@ function blockKey(ctx: MarkdownPostProcessorContext, source: string): string {
 	const normalized = source
 		.replace(/\r\n/g, "\n")
 		.replace(/^\[([ xX]+)\]/gm, "[ ]")
-		// Keep cache identity stable when answer-revealed is written
-		.replace(/^answer-revealed:\s*(true|false)\s*$/gim, "answer-revealed: false");
+		// Strip entirely so inserting answer-revealed: false does not invalidate cache
+		.replace(/^answer-revealed:\s*.*$/gim, "");
 	return `${ctx.sourcePath}\0${normalized}`;
 }
 
@@ -74,6 +75,9 @@ export function onQuaestioPointerDown(ev: PointerEvent): void {
 	const option = target.closest(".quaestio-option");
 	if (option instanceof HTMLElement && block.contains(option)) {
 		ev.stopPropagation();
+		if (option.classList.contains("is-locked") || widget.isChoicesLocked()) {
+			return;
+		}
 		const index = Number(option.dataset.index ?? "0");
 		if (Number.isFinite(index) && index >= 1) {
 			widget.handleOption(index);
@@ -194,6 +198,8 @@ class QuaestioWidget extends MarkdownRenderChild {
 	private revealed = false;
 	private graded = false;
 	private lastResult: GradeResult | null = null;
+	/** When true, option clicks are ignored until Reset. */
+	private choicesLocked = false;
 	private idleTimer: number | null = null;
 	private optionEls: HTMLElement[] = [];
 	private resultEl: HTMLElement | null = null;
@@ -280,6 +286,10 @@ class QuaestioWidget extends MarkdownRenderChild {
 
 		if (this.revealed || this.graded) {
 			this.applyFeedback();
+		}
+
+		if (this.choicesLocked || this.graded || this.revealed) {
+			this.applyChoiceLockVisuals();
 		}
 
 		this.cacheSelections();
@@ -438,6 +448,10 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.onOptionClick(index, this.multi);
 	}
 
+	isChoicesLocked(): boolean {
+		return this.choicesLocked || this.graded || this.revealed;
+	}
+
 	handleCheck(): void {
 		if (this.destroyed) return;
 		this.onCheck();
@@ -482,6 +496,8 @@ class QuaestioWidget extends MarkdownRenderChild {
 	}
 
 	private onOptionClick(index: number, multi: boolean): void {
+		if (this.choicesLocked || this.graded || this.revealed) return;
+
 		if (multi) {
 			const opt = this.question.options.find((o) => o.index === index);
 			if (opt) opt.selected = !opt.selected;
@@ -512,14 +528,11 @@ class QuaestioWidget extends MarkdownRenderChild {
 		const result = gradeSelection(this.question);
 		this.graded = true;
 		this.lastResult = result;
+		this.lockChoices();
 		this.applyFeedback();
 		this.showResult(result);
-		if (!this.revealed) {
-			this.setRevealed(true);
-		} else {
-			this.cacheUiState();
-		}
-		// Persist selections and answer-revealed (panel opens on Check)
+		this.cacheUiState();
+		// Persist selections only — Check does not open the reveal panel
 		this.dirty = true;
 		void this.flushNow();
 	}
@@ -527,6 +540,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 	private onToggleAnswer(): void {
 		this.setRevealed(!this.revealed);
 		if (this.revealed) {
+			this.lockChoices();
 			this.applyFeedback();
 		} else if (!this.graded) {
 			this.clearOptionFeedback();
@@ -544,6 +558,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.graded = false;
 		this.lastResult = null;
 		this.dirty = true;
+		this.unlockChoices();
 		this.clearOptionFeedback();
 		this.updateOptionVisuals();
 		this.hideResult();
@@ -551,6 +566,27 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.cacheSelections();
 		this.cacheUiState();
 		void this.flushNow();
+	}
+
+	private lockChoices(): void {
+		this.choicesLocked = true;
+		this.applyChoiceLockVisuals();
+		this.cacheUiState();
+	}
+
+	private unlockChoices(): void {
+		this.choicesLocked = false;
+		this.applyChoiceLockVisuals();
+		this.cacheUiState();
+	}
+
+	private applyChoiceLockVisuals(): void {
+		const locked = this.choicesLocked || this.graded || this.revealed;
+		for (const btn of this.optionEls) {
+			btn.toggleClass("is-locked", locked);
+			btn.setAttribute("aria-disabled", locked ? "true" : "false");
+			btn.setAttribute("tabindex", locked ? "-1" : "0");
+		}
 	}
 
 	private setRevealed(revealed: boolean): void {
@@ -658,6 +694,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 			revealed: this.revealed,
 			graded: this.graded,
 			result: this.lastResult,
+			choicesLocked: this.choicesLocked,
 		});
 	}
 
@@ -674,6 +711,12 @@ class QuaestioWidget extends MarkdownRenderChild {
 
 			this.setRevealed(cached.revealed);
 
+			if (cached.choicesLocked || this.revealed || this.graded) {
+				this.lockChoices();
+			} else {
+				this.applyChoiceLockVisuals();
+			}
+
 			if (this.revealed || this.graded) {
 				this.applyFeedback();
 			}
@@ -683,6 +726,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		// Fresh open: restore panel from answer-revealed in the note
 		if (this.question.answerRevealed) {
 			this.setRevealed(true);
+			this.lockChoices();
 			this.applyFeedback();
 		}
 	}

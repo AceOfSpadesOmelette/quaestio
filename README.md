@@ -108,8 +108,21 @@ explanation: 7 is prime.
 
 1. Open the note in **Reading view**.
 2. Select options — hollow circle = empty, filled circle = selected. Single-select: click again to clear.
-3. **Check** — grades your selection and opens the answer panel if hidden.
-4. **Show answer** / **Hide answer** — toggles Correct Answer and Explanation (saved in the note as `answer-revealed`).
-5. **Reset** — clears selections, grading highlights, and the answer panel (also clears `[x]` and sets `answer-revealed: false`).
+3. **Check** — grades your selection and highlights correct / incorrect / missed options. Does **not** open Correct Answer or Explanation.
+4. **Show answer** / **Hide answer** — toggles Correct Answer and Explanation (saved in the note as `answer-revealed`). Hide only closes the panel; it does not re-enable picking.
+5. After **Check** or **Show answer**, options cannot be changed until **Reset**.
+6. **Reset** — clears selections, grading highlights, the answer panel, and unlocks options (also clears `[x]` and sets `answer-revealed: false`).
 
 Title, stem, options, Correct Answer body, and Explanation body support markdown; flag **names** never appear in Reading view.
+
+
+
+## Develop
+
+```bash
+npm install
+npm run build
+npm test
+```
+
+CI runs build + Jest on push/PR. Tag a version matching `manifest.json` (for example `1.0.0`) to create a draft GitHub release with `main.js`, `manifest.json`, and `styles.css` when present.

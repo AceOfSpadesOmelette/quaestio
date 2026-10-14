@@ -90,6 +90,21 @@ button.quaestio-option,
 	background: var(--background-modifier-hover);
 }
 
+.quaestio-option.is-locked {
+	cursor: default;
+	pointer-events: none;
+}
+
+.quaestio-option.is-locked:hover {
+	border-color: var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.quaestio-option.is-locked.is-selected:hover {
+	border-color: var(--interactive-accent);
+	background: var(--background-modifier-hover);
+}
+
 .quaestio-option.is-correct {
 	border-color: var(--color-green, #4caf50);
 	background: color-mix(in srgb, var(--color-green, #4caf50) 12%, transparent);
