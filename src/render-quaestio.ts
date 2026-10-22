@@ -13,6 +13,93 @@ const widgetRegistry = new WeakMap<HTMLElement, QuaestioWidget>();
 /** All live widgets (for flush-all on leaf change / unload). */
 const liveWidgets = new Set<QuaestioWidget>();
 
+type NoteListener = (sourcePath: string) => void;
+const noteListeners = new Set<NoteListener>();
+
+export function subscribeNoteChanges(listener: NoteListener): () => void {
+	noteListeners.add(listener);
+	return () => {
+		noteListeners.delete(listener);
+	};
+}
+
+function notifyNoteChanged(sourcePath: string): void {
+	for (const listener of [...noteListeners]) {
+		listener(sourcePath);
+	}
+}
+
+export interface NoteScoreSnapshot {
+	total: number;
+	correct: number;
+	incorrect: number;
+	unanswered: number;
+	anyRevealed: boolean;
+}
+
+function liveWidgetsInNote(sourcePath: string): QuaestioWidget[] {
+	const out: QuaestioWidget[] = [];
+	for (const widget of liveWidgets) {
+		if (!widget.isLive()) continue;
+		if (widget.sourcePath !== sourcePath) continue;
+		out.push(widget);
+	}
+	return out;
+}
+
+/** One widget per block when the same note is open in more than one pane. */
+function uniqueWidgets(widgets: QuaestioWidget[]): QuaestioWidget[] {
+	const byKey = new Map<string, QuaestioWidget>();
+	for (const widget of widgets) {
+		if (!byKey.has(widget.blockKey)) byKey.set(widget.blockKey, widget);
+	}
+	return [...byKey.values()];
+}
+
+export function scoreNote(sourcePath: string): NoteScoreSnapshot {
+	const widgets = uniqueWidgets(liveWidgetsInNote(sourcePath));
+	let correct = 0;
+	let incorrect = 0;
+	let unanswered = 0;
+	let anyRevealed = false;
+	for (const widget of widgets) {
+		const grade = widget.currentGrade();
+		if (grade === "correct") correct += 1;
+		else if (grade === "incorrect") incorrect += 1;
+		else unanswered += 1;
+		if (widget.isAnswerRevealed()) anyRevealed = true;
+	}
+	return { total: widgets.length, correct, incorrect, unanswered, anyRevealed };
+}
+
+export function checkAnsweredInNote(sourcePath: string): void {
+	for (const widget of liveWidgetsInNote(sourcePath)) {
+		if (widget.hasSelection()) widget.handleCheck();
+	}
+}
+
+export function checkAllInNote(sourcePath: string): void {
+	for (const widget of liveWidgetsInNote(sourcePath)) {
+		widget.handleCheck();
+	}
+}
+
+/** Show every answer if none are open; otherwise hide every answer. */
+export function toggleRevealAllInNote(sourcePath: string): void {
+	const widgets = liveWidgetsInNote(sourcePath);
+	const anyRevealed = uniqueWidgets(widgets).some((widget) => widget.isAnswerRevealed());
+	const next = !anyRevealed;
+	for (const widget of widgets) {
+		widget.setAnswerRevealed(next);
+	}
+}
+
+export function resetAllInNote(sourcePath: string): void {
+	for (const widget of liveWidgetsInNote(sourcePath)) {
+		widget.handleReset();
+	}
+}
+
 /**
  * Latest in-memory selection state per quaestio block, so remounts after our own
  * vault.write do not clobber clicks that happened during the write/remount window.
@@ -226,11 +313,13 @@ class QuaestioWidget extends MarkdownRenderChild {
 	}
 
 	onunload(): void {
+		const sourcePath = this.ctx.sourcePath;
 		liveWidgets.delete(this);
 		widgetRegistry.delete(this.root);
 		// Fire-and-forget flush; Obsidian may unload before it completes
 		void this.flushNow();
 		this.markDestroyed();
+		notifyNoteChanged(sourcePath);
 	}
 
 	/** Widget DOM is still attached and interactive. */
@@ -388,6 +477,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		// Restore Show answer / Check / result UI before async markdown fill
 		// so a remount does not flash the panel away.
 		this.restoreUiState();
+		notifyNoteChanged(this.ctx.sourcePath);
 
 		// Fill markdown content asynchronously; options are already interactive
 		await renderMd(
@@ -467,6 +557,36 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.onReset();
 	}
 
+	get sourcePath(): string {
+		return this.ctx.sourcePath;
+	}
+
+	get blockKey(): string {
+		return this.key;
+	}
+
+	currentGrade(): GradeResult {
+		return gradeSelection(this.question);
+	}
+
+	hasSelection(): boolean {
+		return this.question.options.some((opt) => opt.selected);
+	}
+
+	isAnswerRevealed(): boolean {
+		return this.revealed;
+	}
+
+	/** Open or close the answer panel without toggling when already in that state. */
+	setAnswerRevealed(revealed: boolean): void {
+		if (this.destroyed) return;
+		if (this.revealed === revealed) return;
+		this.applyRevealState(revealed);
+		this.dirty = true;
+		void this.flushNow();
+		notifyNoteChanged(this.sourcePath);
+	}
+
 	/** Immediate flush (Check / unload / leaf change). */
 	async flushNow(): Promise<void> {
 		this.clearIdleTimer();
@@ -522,6 +642,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.cacheUiState();
 		// Do NOT persist on every click — schedule idle flush only
 		this.scheduleIdlePersist();
+		notifyNoteChanged(this.sourcePath);
 	}
 
 	private onCheck(): void {
@@ -535,10 +656,11 @@ class QuaestioWidget extends MarkdownRenderChild {
 		// Persist selections only — Check does not open the reveal panel
 		this.dirty = true;
 		void this.flushNow();
+		notifyNoteChanged(this.sourcePath);
 	}
 
-	private onToggleAnswer(): void {
-		this.setRevealed(!this.revealed);
+	private applyRevealState(revealed: boolean): void {
+		this.setRevealed(revealed);
 		if (this.revealed) {
 			this.lockChoices();
 			this.applyFeedback();
@@ -546,8 +668,13 @@ class QuaestioWidget extends MarkdownRenderChild {
 			this.clearOptionFeedback();
 			this.updateOptionVisuals();
 		}
+	}
+
+	private onToggleAnswer(): void {
+		this.applyRevealState(!this.revealed);
 		this.dirty = true;
 		void this.flushNow();
+		notifyNoteChanged(this.sourcePath);
 	}
 
 	/** Clear selections, grading, and reveal panel back to a fresh quaestio. */
@@ -566,6 +693,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.cacheSelections();
 		this.cacheUiState();
 		void this.flushNow();
+		notifyNoteChanged(this.sourcePath);
 	}
 
 	private lockChoices(): void {

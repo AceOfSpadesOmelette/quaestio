@@ -135,3 +135,27 @@ A. Liquid
 explanation:
 Water is a liquid at typical room temperature.
 ```
+
+---
+
+## Dashboard
+
+Scores and bulk actions for every quaestio block in this note. This one updates live. A second dashboard can use `live-update: false` and an **Update** button, and can list flags in a different order.
+
+```quaestio-dashboard
+live-update: true
+check-answered
+check-all
+show-hide-all
+reset-all
+correct-score: Correct: {x} / {y} ({pct}%)
+incorrect-score: Incorrect: {x} / {y}
+unanswered-score: Unanswered: {x} / {y}
+total-score: Total: {y}
+```
+
+```quaestio-dashboard
+live-update: false
+total-score: Questions: {y}
+correct-score: Score: {x} out of {y}
+```

@@ -115,6 +115,38 @@ explanation: 7 is prime.
 
 Title, stem, options, Correct Answer body, and Explanation body support markdown; flag **names** never appear in Reading view.
 
+## Dashboard
+
+A `quaestio-dashboard` block controls and scores every `quaestio` block in the **same note**. Flag order is the display order. Several dashboards in one note stay consistent (same counts and the same Check / Show / Reset results) but can list different flags.
+
+````markdown
+```quaestio-dashboard
+live-update: true
+check-answered
+check-all
+show-hide-all
+reset-all
+correct-score: Correct: {x} / {y} ({pct}%)
+incorrect-score: Incorrect: {x} / {y}
+unanswered-score: Unanswered: {x} / {y}
+total-score: Total: {y}
+```
+````
+
+| Flag | Meaning |
+|------|---------|
+| `live-update: true\|false` | Config only (not shown). Default `true`: score lines refresh as answers change. `false` freezes scores until **Update**. |
+| `check-answered` | Check blocks that already have a selection |
+| `check-all` | Check every block (empty selections become Unanswered) |
+| `show-hide-all` | Show all answers, or hide them if any answer panel is open |
+| `reset-all` | Reset every block |
+| `correct-score` | Correct count. Tokens: `{x}` count, `{y}` total blocks, `{pct}` percent (at most 2 decimals) |
+| `incorrect-score` | Incorrect count. Same tokens |
+| `unanswered-score` | Unanswered count. Same tokens |
+| `total-score` | Total `quaestio` blocks (`{x}` and `{y}` are both the total; `{pct}` is `100` when the note has questions) |
+
+Scores are recomputed from current selections, not from whether Check was pressed. Action buttons always run immediately; only the score lines follow `live-update`.
+
 
 
 ## Develop

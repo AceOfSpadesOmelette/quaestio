@@ -1,4 +1,5 @@
 import { Plugin } from "obsidian";
+import { onDashboardClick, onDashboardPointerDown, renderDashboard } from "./render-dashboard";
 import {
 	flushAllQuaestioSelections,
 	onQuaestioClick,
@@ -17,9 +18,14 @@ export default class QuaestioPlugin extends Plugin {
 		);
 		// Bubble-phase: keep leftover clicks from placing the LP cursor
 		this.registerDomEvent(document, "click", onQuaestioClick, { capture: false });
+		this.registerDomEvent(document, "pointerdown", onDashboardPointerDown, { capture: true });
+		this.registerDomEvent(document, "click", onDashboardClick, { capture: false });
 
 		this.registerMarkdownCodeBlockProcessor("quaestio", (source, el, ctx) => {
 			renderQuaestio(this.app, source, el, ctx);
+		});
+		this.registerMarkdownCodeBlockProcessor("quaestio-dashboard", (source, el, ctx) => {
+			renderDashboard(source, el, ctx);
 		});
 
 		// Leaving a note / switching leaves: flush pending selections
