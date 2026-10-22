@@ -144,18 +144,19 @@ Scores and bulk actions for every quaestio block in this note. This one updates 
 
 ```quaestio-dashboard
 live-update: true
+include-unanswered: true
 check-answered
 check-all
 show-hide-all
 reset-all
 correct-score: Correct: {x} / {y} ({pct}%)
-incorrect-score: Incorrect: {x} / {y}
-unanswered-score: Unanswered: {x} / {y}
-total-score: Total: {y}
+incorrect-score: Incorrect: {x} / {y} ({pct}%)
+unanswered-score: Unanswered: {x} / {y} ({pct}%)
 ```
 
 ```quaestio-dashboard
 live-update: false
-total-score: Questions: {y}
+include-unanswered: false
 correct-score: Score: {x} out of {y}
+unanswered-score: Unanswered: {x} / {y}
 ```

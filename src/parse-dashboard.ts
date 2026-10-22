@@ -1,6 +1,6 @@
 export type DashboardAction = "check-answered" | "check-all" | "show-hide-all" | "reset-all";
 
-export type ScoreKind = "correct-score" | "incorrect-score" | "unanswered-score" | "total-score";
+export type ScoreKind = "correct-score" | "incorrect-score" | "unanswered-score";
 
 export type DashboardItem =
 	| { kind: DashboardAction }
@@ -8,6 +8,8 @@ export type DashboardItem =
 
 export interface DashboardSpec {
 	liveUpdate: boolean;
+	/** When false, correct/incorrect {y} excludes unanswered blocks. */
+	includeUnanswered: boolean;
 	items: DashboardItem[];
 }
 
@@ -26,7 +28,6 @@ export const DEFAULT_SCORE_FORMATS: Record<ScoreKind, string> = {
 	"correct-score": "Correct: {x} / {y}",
 	"incorrect-score": "Incorrect: {x} / {y}",
 	"unanswered-score": "Unanswered: {x} / {y}",
-	"total-score": "Total: {y}",
 };
 
 function isScoreKind(value: string): value is ScoreKind {
@@ -45,6 +46,7 @@ export function parseDashboard(source: string): DashboardParseResult {
 	const seen = new Set<string>();
 	const items: DashboardItem[] = [];
 	let liveUpdate = true;
+	let includeUnanswered = true;
 
 	const lines = source.replace(/\r\n/g, "\n").split("\n");
 	for (const rawLine of lines) {
@@ -71,6 +73,14 @@ export function parseDashboard(source: string): DashboardParseResult {
 			continue;
 		}
 
+		if (key === "include-unanswered") {
+			if (value !== "true" && value !== "false") {
+				return { ok: false, error: "Invalid include-unanswered. Use true or false." };
+			}
+			includeUnanswered = value === "true";
+			continue;
+		}
+
 		if (isAction(key)) {
 			if (value) {
 				return { ok: false, error: `Unexpected value for ${key}.` };
@@ -90,5 +100,5 @@ export function parseDashboard(source: string): DashboardParseResult {
 		return { ok: false, error: `Unknown flag: ${key}` };
 	}
 
-	return { ok: true, spec: { liveUpdate, items } };
+	return { ok: true, spec: { liveUpdate, includeUnanswered, items } };
 }

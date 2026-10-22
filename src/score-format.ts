@@ -14,18 +14,23 @@ export function formatPercent(percent: number): string {
 	return String(rounded);
 }
 
-export function formatScoreLine(format: string, kind: ScoreKind, counts: ScoreCounts): string {
-	const y = counts.total;
+export function formatScoreLine(
+	format: string,
+	kind: ScoreKind,
+	counts: ScoreCounts,
+	includeUnanswered = true,
+): string {
 	const x =
-		kind === "total-score"
-			? y
-			: kind === "correct-score"
-				? counts.correct
-				: kind === "incorrect-score"
-					? counts.incorrect
-					: counts.unanswered;
-	const percent =
-		kind === "total-score" ? (y > 0 ? 100 : 0) : y === 0 ? 0 : (x / y) * 100;
+		kind === "correct-score"
+			? counts.correct
+			: kind === "incorrect-score"
+				? counts.incorrect
+				: counts.unanswered;
+	const y =
+		kind === "unanswered-score" || includeUnanswered
+			? counts.total
+			: counts.correct + counts.incorrect;
+	const percent = y === 0 ? 0 : (x / y) * 100;
 	return format
 		.split("{x}")
 		.join(String(x))

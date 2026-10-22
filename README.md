@@ -122,30 +122,30 @@ A `quaestio-dashboard` block controls and scores every `quaestio` block in the *
 ````markdown
 ```quaestio-dashboard
 live-update: true
+include-unanswered: true
 check-answered
 check-all
 show-hide-all
 reset-all
 correct-score: Correct: {x} / {y} ({pct}%)
-incorrect-score: Incorrect: {x} / {y}
-unanswered-score: Unanswered: {x} / {y}
-total-score: Total: {y}
+incorrect-score: Incorrect: {x} / {y} ({pct}%)
+unanswered-score: Unanswered: {x} / {y} ({pct}%)
 ```
 ````
 
 | Flag | Meaning |
 |------|---------|
 | `live-update: true\|false` | Config only (not shown). Default `true`: score lines refresh as answers change. `false` freezes scores until **Update**. |
+| `include-unanswered: true\|false` | Config only (not shown). Default `true`. When `false`, correct and incorrect `{y}` is answered questions only (`correct + incorrect`). Unanswered `{y}` is always every `quaestio` block. |
 | `check-answered` | Check blocks that already have a selection |
 | `check-all` | Check every block (empty selections become Unanswered) |
 | `show-hide-all` | Show all answers, or hide them if any answer panel is open |
 | `reset-all` | Reset every block |
-| `correct-score` | Correct count. Tokens: `{x}` count, `{y}` total blocks, `{pct}` percent (at most 2 decimals) |
+| `correct-score` | Correct count. Tokens: `{x}` count, `{y}` denominator, `{pct}` percent (at most 2 decimals) |
 | `incorrect-score` | Incorrect count. Same tokens |
-| `unanswered-score` | Unanswered count. Same tokens |
-| `total-score` | Total `quaestio` blocks (`{x}` and `{y}` are both the total; `{pct}` is `100` when the note has questions) |
+| `unanswered-score` | Unanswered count. `{y}` is always the number of `quaestio` blocks |
 
-Scores are recomputed from current selections, not from whether Check was pressed. Action buttons always run immediately; only the score lines follow `live-update`.
+Action buttons sit on one wrapping row until a score line. Scores are recomputed from current selections, not from whether Check was pressed. Action buttons always run immediately; only the score lines follow `live-update`.
 
 
 

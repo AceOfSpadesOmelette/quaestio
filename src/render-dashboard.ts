@@ -83,8 +83,20 @@ class DashboardView extends MarkdownRenderChild {
 
 	private build(): void {
 		const root = this.containerEl;
+		let actions: HTMLElement | null = null;
+		const endActions = () => {
+			actions = null;
+		};
+		const actionRow = (): HTMLElement => {
+			if (!actions) {
+				actions = root.createDiv({ cls: "quaestio-dashboard-actions" });
+			}
+			return actions;
+		};
+
 		for (const item of this.spec.items) {
 			if (item.kind.endsWith("-score")) {
+				endActions();
 				const kind = item.kind as ScoreKind;
 				const format = "format" in item ? item.format : "";
 				const el = root.createEl("div", { cls: "quaestio-dashboard-score" });
@@ -92,7 +104,7 @@ class DashboardView extends MarkdownRenderChild {
 				continue;
 			}
 
-			const btn = root.createEl("button", {
+			const btn = actionRow().createEl("button", {
 				cls: "quaestio-btn quaestio-dashboard-btn",
 				attr: { type: "button", "data-action": item.kind },
 			});
@@ -109,7 +121,7 @@ class DashboardView extends MarkdownRenderChild {
 		}
 
 		if (!this.spec.liveUpdate && this.hasScores) {
-			root.createEl("button", {
+			actionRow().createEl("button", {
 				cls: "quaestio-btn quaestio-dashboard-btn",
 				attr: { type: "button", "data-action": "update" },
 				text: "Update",
@@ -130,7 +142,9 @@ class DashboardView extends MarkdownRenderChild {
 	private refreshScores(): void {
 		const counts = this.counts();
 		for (const row of this.scoreRows) {
-			row.el.setText(formatScoreLine(row.format, row.kind, counts));
+			row.el.setText(
+				formatScoreLine(row.format, row.kind, counts, this.spec.includeUnanswered),
+			);
 		}
 	}
 
