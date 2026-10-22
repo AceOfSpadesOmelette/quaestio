@@ -8,6 +8,7 @@ const QUESTION_STEM_RE = /^question-stem:\s*(.*)$/i;
 const CORRECT_ANSWER_FLAG_RE = /^correct-answer:\s*(.*)$/i;
 const EXPLANATION_FLAG_RE = /^explanation:\s*(.*)$/i;
 const ANSWER_REVEALED_RE = /^answer-revealed:\s*(.*)$/i;
+const ANSWER_CHECKED_RE = /^answer-checked:\s*(.*)$/i;
 
 /** Any `key: value` line that looks like a flag (for unknown-flag errors). */
 const ANY_FLAG_RE = /^([a-z0-9-]+)\s*:\s*(.*)$/i;
@@ -20,6 +21,7 @@ const KNOWN_FLAG_KEYS = new Set([
 	"correct-answer",
 	"explanation",
 	"answer-revealed",
+	"answer-checked",
 ]);
 
 type ContentFields = {
@@ -28,6 +30,7 @@ type ContentFields = {
 	correctAnswer: string | null;
 	explanation: string | null;
 	answerRevealed: boolean | null;
+	answerChecked: boolean | null;
 };
 
 type AllowedFlag =
@@ -36,7 +39,8 @@ type AllowedFlag =
 	| "stem"
 	| "correct-answer"
 	| "explanation"
-	| "answer-revealed";
+	| "answer-revealed"
+	| "answer-checked";
 
 function parseCorrectIndexes(raw: string): number[] | null {
 	const text = raw.trim();
@@ -80,7 +84,8 @@ function isKnownFlagLine(line: string): boolean {
 		QUESTION_STEM_RE.test(trimmed) ||
 		CORRECT_ANSWER_FLAG_RE.test(trimmed) ||
 		EXPLANATION_FLAG_RE.test(trimmed) ||
-		ANSWER_REVEALED_RE.test(trimmed)
+		ANSWER_REVEALED_RE.test(trimmed) ||
+		ANSWER_CHECKED_RE.test(trimmed)
 	);
 }
 
@@ -204,6 +209,30 @@ function parseFlagAt(
 		return {
 			ok: true,
 			fields: { ...fields, answerRevealed: raw === "true" },
+			numberOfCorrectAnswers,
+			correctIndexes,
+			next: i + 1,
+		};
+	}
+
+	const checkedMatch = trimmed.match(ANSWER_CHECKED_RE);
+	if (checkedMatch) {
+		if (!allowed.has("answer-checked")) {
+			return { ok: false, error: "Unexpected answer-checked flag." };
+		}
+		if (fields.answerChecked !== null) {
+			return { ok: false, error: "Duplicate flag: answer-checked" };
+		}
+		const raw = (checkedMatch[1] ?? "").trim().toLowerCase();
+		if (raw !== "true" && raw !== "false") {
+			return {
+				ok: false,
+				error: "Invalid answer-checked. Use true or false.",
+			};
+		}
+		return {
+			ok: true,
+			fields: { ...fields, answerChecked: raw === "true" },
 			numberOfCorrectAnswers,
 			correctIndexes,
 			next: i + 1,
@@ -360,6 +389,7 @@ export function parseQuaestio(source: string): ParseResult {
 		correctAnswer: null,
 		explanation: null,
 		answerRevealed: null,
+		answerChecked: null,
 	};
 
 	const headerAllowed = new Set<AllowedFlag>([
@@ -369,6 +399,7 @@ export function parseQuaestio(source: string): ParseResult {
 		"correct-answer",
 		"explanation",
 		"answer-revealed",
+		"answer-checked",
 	]);
 
 	// Header: flags until first option line
@@ -470,11 +501,12 @@ export function parseQuaestio(source: string): ParseResult {
 		i++;
 	}
 
-	// Trailing: correct-answer / explanation / answer-revealed (if not already set)
+	// Trailing: correct-answer / explanation / answer-revealed / answer-checked
 	const trailingAllowed = new Set<AllowedFlag>([
 		"correct-answer",
 		"explanation",
 		"answer-revealed",
+		"answer-checked",
 	]);
 
 	while (i < lines.length) {
@@ -517,6 +549,7 @@ export function parseQuaestio(source: string): ParseResult {
 		correctAnswerRaw: (fields.correctAnswer ?? "").trim(),
 		explanation: (fields.explanation ?? "").trim(),
 		answerRevealed: fields.answerRevealed === true,
+		answerChecked: fields.answerChecked === true,
 	};
 
 	return { ok: true, question };

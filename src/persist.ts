@@ -3,7 +3,7 @@ import { TFile } from "obsidian";
 import { updateQuaestioBody } from "./serialize-quaestio";
 
 /**
- * Write option selections and answer-revealed back into the quaestio fence.
+ * Write option selections, answer-revealed, and answer-checked back into the quaestio fence.
  * Skips vault.process when the body is already up to date (avoids remount flicker).
  */
 export async function persistSelections(
@@ -12,6 +12,7 @@ export async function persistSelections(
 	el: HTMLElement,
 	selectedByIndex: Record<number, boolean>,
 	answerRevealed: boolean,
+	answerChecked: boolean,
 ): Promise<void> {
 	const section = ctx.getSectionInfo(el);
 	if (!section) return;
@@ -39,6 +40,7 @@ export async function persistSelections(
 			body,
 			selectedByIndex,
 			answerRevealed,
+			answerChecked,
 		);
 
 		// No-op write → skip so Obsidian does not remount the widget

@@ -1,20 +1,33 @@
 /**
- * Update option [ ] / [x] markers and upsert answer-revealed in a quaestio fence body.
- * selectedByIndex uses 1-based option indexes.
+ * Update option [ ] / [x] markers and upsert answer-revealed / answer-checked
+ * in a quaestio fence body. selectedByIndex uses 1-based option indexes.
  */
 
 const OPTION_RE = /^(\[)([ xX]+)(\]\s+)(.+)$/;
 const ANSWER_REVEALED_LINE_RE = /^answer-revealed:\s*.*$/i;
+const ANSWER_CHECKED_LINE_RE = /^answer-checked:\s*.*$/i;
 const HEADER_FLAG_RE =
-	/^(number-of-correct-answers|correct-index|question-title|question-stem|correct-answer|explanation|answer-revealed)\s*:/i;
+	/^(number-of-correct-answers|correct-index|question-title|question-stem|correct-answer|explanation|answer-revealed|answer-checked)\s*:/i;
 
 export function updateQuaestioBody(
 	source: string,
 	selectedByIndex: Record<number, boolean>,
 	answerRevealed: boolean,
+	answerChecked: boolean,
 ): string {
 	const withMarkers = updateOptionMarkers(source, selectedByIndex);
-	return upsertAnswerRevealed(withMarkers, answerRevealed);
+	const withRevealed = upsertBooleanFlag(
+		withMarkers,
+		"answer-revealed",
+		answerRevealed,
+		ANSWER_REVEALED_LINE_RE,
+	);
+	return upsertBooleanFlag(
+		withRevealed,
+		"answer-checked",
+		answerChecked,
+		ANSWER_CHECKED_LINE_RE,
+	);
 }
 
 /**
@@ -46,12 +59,39 @@ export function upsertAnswerRevealed(
 	source: string,
 	answerRevealed: boolean,
 ): string {
+	return upsertBooleanFlag(
+		source,
+		"answer-revealed",
+		answerRevealed,
+		ANSWER_REVEALED_LINE_RE,
+	);
+}
+
+/** Replace existing answer-checked line, or insert after header flags before options. */
+export function upsertAnswerChecked(
+	source: string,
+	answerChecked: boolean,
+): string {
+	return upsertBooleanFlag(
+		source,
+		"answer-checked",
+		answerChecked,
+		ANSWER_CHECKED_LINE_RE,
+	);
+}
+
+function upsertBooleanFlag(
+	source: string,
+	key: string,
+	value: boolean,
+	lineRe: RegExp,
+): string {
 	const lines = source.replace(/\r\n/g, "\n").split("\n");
-	const newLine = `answer-revealed: ${answerRevealed ? "true" : "false"}`;
+	const newLine = `${key}: ${value ? "true" : "false"}`;
 
 	let found = false;
 	const updated = lines.map((line) => {
-		if (ANSWER_REVEALED_LINE_RE.test(line.trim())) {
+		if (lineRe.test(line.trim())) {
 			found = true;
 			return newLine;
 		}

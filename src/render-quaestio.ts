@@ -2,6 +2,7 @@ import type { App, MarkdownPostProcessorContext } from "obsidian";
 import { MarkdownRenderChild, MarkdownRenderer } from "obsidian";
 import { gradeSelection, parseQuaestio } from "./parse-quaestio";
 import { persistSelections } from "./persist";
+import { quaestioBlockKey, type LiveGrade, type NoteScoreSnapshot } from "./score-note";
 import type { GradeResult, QuaestioQuestion } from "./types";
 
 /** Idle flush after the user stops interacting with a block. */
@@ -29,12 +30,10 @@ function notifyNoteChanged(sourcePath: string): void {
 	}
 }
 
-export interface NoteScoreSnapshot {
-	total: number;
-	correct: number;
-	incorrect: number;
-	unanswered: number;
-	anyRevealed: boolean;
+export type { NoteScoreSnapshot } from "./score-note";
+
+function blockKey(ctx: MarkdownPostProcessorContext, source: string): string {
+	return quaestioBlockKey(ctx.sourcePath, source);
 }
 
 function liveWidgetsInNote(sourcePath: string): QuaestioWidget[] {
@@ -70,6 +69,21 @@ export function scoreNote(sourcePath: string): NoteScoreSnapshot {
 		if (widget.isAnswerRevealed()) anyRevealed = true;
 	}
 	return { total: widgets.length, correct, incorrect, unanswered, anyRevealed };
+}
+
+/** In-memory grades for mounted blocks, including ones not yet drawn into the page. */
+export function liveGradesForNote(sourcePath: string): LiveGrade[] {
+	const out: LiveGrade[] = [];
+	for (const widget of liveWidgets) {
+		if (!widget.isActive()) continue;
+		if (widget.sourcePath !== sourcePath) continue;
+		out.push({
+			key: widget.blockKey,
+			grade: widget.currentGrade(),
+			revealed: widget.isAnswerRevealed(),
+		});
+	}
+	return out;
 }
 
 export function checkAnsweredInNote(sourcePath: string): void {
@@ -118,19 +132,6 @@ interface UiCache {
 }
 
 const uiCache = new Map<string, UiCache>();
-
-/**
- * Stable identity for a quaestio block across [ ]/[x] marker changes.
- * Uses sourcePath + source with option markers normalized.
- */
-function blockKey(ctx: MarkdownPostProcessorContext, source: string): string {
-	const normalized = source
-		.replace(/\r\n/g, "\n")
-		.replace(/^\[([ xX]+)\]/gm, "[ ]")
-		// Strip entirely so inserting answer-revealed: false does not invalidate cache
-		.replace(/^answer-revealed:\s*.*$/gim, "");
-	return `${ctx.sourcePath}\0${normalized}`;
-}
 
 export function getQuaestioWidgetForRoot(el: HTMLElement): QuaestioWidget | undefined {
 	return widgetRegistry.get(el);
@@ -320,6 +321,11 @@ class QuaestioWidget extends MarkdownRenderChild {
 		void this.flushNow();
 		this.markDestroyed();
 		notifyNoteChanged(sourcePath);
+	}
+
+	/** Still registered; selections are usable even before the options are in the DOM. */
+	isActive(): boolean {
+		return !this.destroyed;
 	}
 
 	/** Widget DOM is still attached and interactive. */
@@ -605,10 +611,12 @@ class QuaestioWidget extends MarkdownRenderChild {
 				this.root,
 				map,
 				this.revealed,
+				this.graded,
 			);
 			if (!this.destroyed) {
 				this.dirty = false;
 				this.question.answerRevealed = this.revealed;
+				this.question.answerChecked = this.graded;
 			}
 		} finally {
 			this.persisting = false;
@@ -653,7 +661,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		this.applyFeedback();
 		this.showResult(result);
 		this.cacheUiState();
-		// Persist selections only — Check does not open the reveal panel
+		// Persist selections and answer-checked. Check does not open the reveal panel.
 		this.dirty = true;
 		void this.flushNow();
 		notifyNoteChanged(this.sourcePath);
@@ -851,12 +859,22 @@ class QuaestioWidget extends MarkdownRenderChild {
 			return;
 		}
 
-		// Fresh open: restore panel from answer-revealed in the note
+		// Fresh open: restore Check and the answer panel from the note.
+		if (this.question.answerChecked) {
+			this.graded = true;
+			this.lastResult = gradeSelection(this.question);
+		}
 		if (this.question.answerRevealed) {
 			this.setRevealed(true);
+		}
+		if (this.graded || this.revealed) {
 			this.lockChoices();
 			this.applyFeedback();
 		}
+		if (this.graded && this.lastResult) {
+			this.showResult(this.lastResult);
+		}
+		this.cacheUiState();
 	}
 
 	private clearIdleTimer(): void {

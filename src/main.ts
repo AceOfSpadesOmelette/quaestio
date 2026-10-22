@@ -25,7 +25,7 @@ export default class QuaestioPlugin extends Plugin {
 			renderQuaestio(this.app, source, el, ctx);
 		});
 		this.registerMarkdownCodeBlockProcessor("quaestio-dashboard", (source, el, ctx) => {
-			renderDashboard(source, el, ctx);
+			renderDashboard(this.app, source, el, ctx);
 		});
 
 		// Leaving a note / switching leaves: flush pending selections

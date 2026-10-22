@@ -8,7 +8,7 @@ export type DashboardItem =
 
 export interface DashboardSpec {
 	liveUpdate: boolean;
-	/** When false, correct/incorrect {y} excludes unanswered blocks. */
+	/** When false, correct/incorrect {total} excludes unanswered blocks. */
 	includeUnanswered: boolean;
 	items: DashboardItem[];
 }
@@ -25,9 +25,9 @@ const ACTIONS = new Set<DashboardAction>([
 ]);
 
 export const DEFAULT_SCORE_FORMATS: Record<ScoreKind, string> = {
-	"correct-score": "Correct: {x} / {y}",
-	"incorrect-score": "Incorrect: {x} / {y}",
-	"unanswered-score": "Unanswered: {x} / {y}",
+	"correct-score": "Correct: {count} / {total}",
+	"incorrect-score": "Incorrect: {count} / {total}",
+	"unanswered-score": "Unanswered: {count} / {total}",
 };
 
 function isScoreKind(value: string): value is ScoreKind {

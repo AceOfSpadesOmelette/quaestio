@@ -1,6 +1,6 @@
 # Quaestio
 
-Turn `quaestio` code blocks into interactive multiple-choice questions in Obsidian **Reading view** (and Live Preview). Selections are saved as `[x]` markers; Show/Hide answer is saved as `answer-revealed: true|false`.
+Turn `quaestio` code blocks into interactive multiple-choice questions in Obsidian **Reading view** (and Live Preview). Selections are saved as `[x]` markers; Check is saved as `answer-checked: true|false`; Show/Hide answer is saved as `answer-revealed: true|false`.
 
 ## Install
 
@@ -40,8 +40,9 @@ explanation: 1 plus 1 is equal to 2.
 | `correct-answer:` | no | Body under the UI label **Correct Answer:** |
 | `explanation:` | no | Body under the UI label **Explanation:** |
 | `answer-revealed: true\|false` | no | Whether the answer panel is open (`false` / omitted = hidden) |
+| `answer-checked: true\|false` | no | Whether Check has been applied (`false` / omitted = not graded). Restores the Correct / Incorrect / Unanswered banner |
 
-Machine flags and content flags may appear in any order **before** the first option line. `correct-answer`, `explanation`, and `answer-revealed` may also appear **after** the options. Each flag key may appear only once.
+Machine flags and content flags may appear in any order **before** the first option line. `correct-answer`, `explanation`, `answer-revealed`, and `answer-checked` may also appear **after** the options. Each flag key may appear only once.
 
 Inline values and multi-line bodies both work:
 
@@ -108,10 +109,10 @@ explanation: 7 is prime.
 
 1. Open the note in **Reading view**.
 2. Select options — hollow circle = empty, filled circle = selected. Single-select: click again to clear.
-3. **Check** — grades your selection and highlights correct / incorrect / missed options. Does **not** open Correct Answer or Explanation.
+3. **Check** — grades your selection, highlights correct / incorrect / missed options, and shows Correct / Incorrect / Unanswered (saved as `answer-checked: true`). Does **not** open Correct Answer or Explanation. Reopening the note restores that banner.
 4. **Show answer** / **Hide answer** — toggles Correct Answer and Explanation (saved in the note as `answer-revealed`). Hide only closes the panel; it does not re-enable picking.
 5. After **Check** or **Show answer**, options cannot be changed until **Reset**.
-6. **Reset** — clears selections, grading highlights, the answer panel, and unlocks options (also clears `[x]` and sets `answer-revealed: false`).
+6. **Reset** — clears selections, grading highlights, the answer panel, and unlocks options (also clears `[x]`, sets `answer-checked: false`, and sets `answer-revealed: false`).
 
 Title, stem, options, Correct Answer body, and Explanation body support markdown; flag **names** never appear in Reading view.
 
@@ -127,23 +128,23 @@ check-answered
 check-all
 show-hide-all
 reset-all
-correct-score: Correct: {x} / {y} ({pct}%)
-incorrect-score: Incorrect: {x} / {y} ({pct}%)
-unanswered-score: Unanswered: {x} / {y} ({pct}%)
+correct-score: Correct: {count} / {total} ({pct}%)
+incorrect-score: Incorrect: {count} / {total} ({pct}%)
+unanswered-score: Unanswered: {count} / {total} ({pct}%)
 ```
 ````
 
 | Flag | Meaning |
 |------|---------|
 | `live-update: true\|false` | Config only (not shown). Default `true`: score lines refresh as answers change. `false` freezes scores until **Update**. |
-| `include-unanswered: true\|false` | Config only (not shown). Default `true`. When `false`, correct and incorrect `{y}` is answered questions only (`correct + incorrect`). Unanswered `{y}` is always every `quaestio` block. |
+| `include-unanswered: true\|false` | Config only (not shown). Default `true`. When `false`, correct and incorrect `{total}` is answered questions only (`correct + incorrect`). Unanswered `{total}` is always every `quaestio` block. |
 | `check-answered` | Check blocks that already have a selection |
 | `check-all` | Check every block (empty selections become Unanswered) |
 | `show-hide-all` | Show all answers, or hide them if any answer panel is open |
 | `reset-all` | Reset every block |
-| `correct-score` | Correct count. Tokens: `{x}` count, `{y}` denominator, `{pct}` percent (at most 2 decimals) |
+| `correct-score` | Correct count. Tokens: `{count}` numerator, `{total}` denominator, `{pct}` percent (at most 2 decimals). `{x}` and `{y}` still work as aliases of `{count}` and `{total}`. |
 | `incorrect-score` | Incorrect count. Same tokens |
-| `unanswered-score` | Unanswered count. `{y}` is always the number of `quaestio` blocks |
+| `unanswered-score` | Unanswered count. `{total}` is always the number of `quaestio` blocks |
 
 Action buttons sit on one wrapping row until a score line. Scores are recomputed from current selections, not from whether Check was pressed. Action buttons always run immediately; only the score lines follow `live-update`.
 

@@ -1,13 +1,14 @@
-import { MarkdownRenderChild, type MarkdownPostProcessorContext } from "obsidian";
+import { MarkdownRenderChild, TFile, type App, type MarkdownPostProcessorContext } from "obsidian";
 import { parseDashboard, type DashboardSpec, type ScoreKind } from "./parse-dashboard";
 import {
 	checkAllInNote,
 	checkAnsweredInNote,
+	liveGradesForNote,
 	resetAllInNote,
-	scoreNote,
 	subscribeNoteChanges,
 	toggleRevealAllInNote,
 } from "./render-quaestio";
+import { scoreMarkdown, type NoteScoreSnapshot } from "./score-note";
 import { formatScoreLine, type ScoreCounts } from "./score-format";
 
 const REFRESH_MS = 80;
@@ -26,9 +27,13 @@ class DashboardView extends MarkdownRenderChild {
 	private readonly scoreRows: ScoreRow[] = [];
 	private showBtn: HTMLElement | null = null;
 	private readonly hasScores: boolean;
+	private refreshGen = 0;
+	private closed = false;
+	private scoreRefreshPending = false;
 
 	constructor(
 		root: HTMLElement,
+		private readonly app: App,
 		private readonly sourcePath: string,
 		private readonly spec: DashboardSpec,
 	) {
@@ -38,8 +43,7 @@ class DashboardView extends MarkdownRenderChild {
 
 	onload(): void {
 		this.build();
-		this.refreshShowHide();
-		this.refreshScores();
+		void this.refreshFromFile(true);
 		this.unsubscribe = subscribeNoteChanges((path) => {
 			if (path !== this.sourcePath) return;
 			this.scheduleRefresh();
@@ -47,6 +51,8 @@ class DashboardView extends MarkdownRenderChild {
 	}
 
 	onunload(): void {
+		this.closed = true;
+		this.refreshGen += 1;
 		this.unsubscribe?.();
 		this.unsubscribe = null;
 		if (this.timer !== null) {
@@ -68,7 +74,7 @@ class DashboardView extends MarkdownRenderChild {
 		} else if (action === "reset-all") {
 			resetAllInNote(this.sourcePath);
 		} else if (action === "update") {
-			this.refreshScores();
+			void this.refreshFromFile(true);
 		}
 	}
 
@@ -76,8 +82,7 @@ class DashboardView extends MarkdownRenderChild {
 		if (this.timer !== null) window.clearTimeout(this.timer);
 		this.timer = window.setTimeout(() => {
 			this.timer = null;
-			this.refreshShowHide();
-			if (this.spec.liveUpdate) this.refreshScores();
+			void this.refreshFromFile(this.spec.liveUpdate);
 		}, REFRESH_MS);
 	}
 
@@ -129,8 +134,32 @@ class DashboardView extends MarkdownRenderChild {
 		}
 	}
 
-	private counts(): ScoreCounts {
-		const snap = scoreNote(this.sourcePath);
+	private async refreshFromFile(updateScores: boolean): Promise<void> {
+		if (updateScores) this.scoreRefreshPending = true;
+		const gen = ++this.refreshGen;
+		const wantScores = this.scoreRefreshPending;
+		const file = this.app.vault.getAbstractFileByPath(this.sourcePath);
+		let snap: NoteScoreSnapshot = {
+			total: 0,
+			correct: 0,
+			incorrect: 0,
+			unanswered: 0,
+			anyRevealed: false,
+		};
+		if (file instanceof TFile) {
+			const text = await this.app.vault.cachedRead(file);
+			if (this.closed || gen !== this.refreshGen) return;
+			snap = scoreMarkdown(this.sourcePath, text, liveGradesForNote(this.sourcePath));
+		}
+		if (this.closed || gen !== this.refreshGen) return;
+		this.refreshShowHide(snap.anyRevealed);
+		if (wantScores) {
+			this.scoreRefreshPending = false;
+			this.refreshScores(snap);
+		}
+	}
+
+	private counts(snap: NoteScoreSnapshot): ScoreCounts {
 		return {
 			correct: snap.correct,
 			incorrect: snap.incorrect,
@@ -139,8 +168,8 @@ class DashboardView extends MarkdownRenderChild {
 		};
 	}
 
-	private refreshScores(): void {
-		const counts = this.counts();
+	private refreshScores(snap: NoteScoreSnapshot): void {
+		const counts = this.counts(snap);
 		for (const row of this.scoreRows) {
 			row.el.setText(
 				formatScoreLine(row.format, row.kind, counts, this.spec.includeUnanswered),
@@ -148,14 +177,14 @@ class DashboardView extends MarkdownRenderChild {
 		}
 	}
 
-	private refreshShowHide(): void {
+	private refreshShowHide(anyRevealed: boolean): void {
 		if (!this.showBtn) return;
-		const revealed = scoreNote(this.sourcePath).anyRevealed;
-		this.showBtn.setText(revealed ? "Hide all answers" : "Show all answers");
+		this.showBtn.setText(anyRevealed ? "Hide all answers" : "Show all answers");
 	}
 }
 
 export function renderDashboard(
+	app: App,
 	source: string,
 	el: HTMLElement,
 	ctx: MarkdownPostProcessorContext,
@@ -171,7 +200,7 @@ export function renderDashboard(
 		return;
 	}
 
-	const view = new DashboardView(el, ctx.sourcePath, parsed.spec);
+	const view = new DashboardView(el, app, ctx.sourcePath, parsed.spec);
 	dashboardRegistry.set(el, view);
 	ctx.addChild(view);
 }

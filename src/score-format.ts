@@ -31,11 +31,17 @@ export function formatScoreLine(
 			? counts.total
 			: counts.correct + counts.incorrect;
 	const percent = y === 0 ? 0 : (x / y) * 100;
+	const count = String(x);
+	const total = String(y);
 	return format
+		.split("{count}")
+		.join(count)
+		.split("{total}")
+		.join(total)
 		.split("{x}")
-		.join(String(x))
+		.join(count)
 		.split("{y}")
-		.join(String(y))
+		.join(total)
 		.split("{pct}")
 		.join(formatPercent(percent));
 }

@@ -19,6 +19,8 @@ export interface QuaestioQuestion {
 	explanation: string;
 	/** Whether Correct Answer / Explanation panel is open */
 	answerRevealed: boolean;
+	/** Whether Check has been applied (Correct / Incorrect / Unanswered banner). */
+	answerChecked: boolean;
 }
 
 export type GradeResult = "correct" | "incorrect" | "unanswered";

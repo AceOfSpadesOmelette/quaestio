@@ -6,6 +6,7 @@ import {
 import {
 	updateOptionMarkers,
 	updateQuaestioBody,
+	upsertAnswerChecked,
 	upsertAnswerRevealed,
 } from "../src/serialize-quaestio";
 import type { QuaestioQuestion } from "../src/types";
@@ -111,6 +112,7 @@ describe("gradeSelection", () => {
 			correctAnswerRaw: "A",
 			explanation: "E",
 			answerRevealed: false,
+			answerChecked: false,
 			options,
 		};
 	}
@@ -154,11 +156,36 @@ describe("serialize-quaestio", () => {
 	});
 
 	it("round-trips body updates", () => {
-		const body = updateQuaestioBody(SINGLE, { 2: true }, true);
+		const body = updateQuaestioBody(SINGLE, { 2: true }, true, true);
 		const parsed = parseQuaestio(body);
 		expect(parsed.ok).toBe(true);
 		if (!parsed.ok) return;
 		expect(parsed.question.options[1]?.selected).toBe(true);
 		expect(parsed.question.answerRevealed).toBe(true);
+		expect(parsed.question.answerChecked).toBe(true);
+	});
+
+	it("upserts answer-checked", () => {
+		const withFlag = upsertAnswerChecked(SINGLE, true);
+		expect(withFlag).toMatch(/answer-checked:\s*true/i);
+		const flipped = upsertAnswerChecked(withFlag, false);
+		expect(flipped).toMatch(/answer-checked:\s*false/i);
+		expect(flipped.match(/answer-checked:/gi)?.length).toBe(1);
+		const parsed = parseQuaestio(flipped);
+		expect(parsed.ok).toBe(true);
+		if (!parsed.ok) return;
+		expect(parsed.question.answerChecked).toBe(false);
+	});
+
+	it("reads a trailing answer-checked flag", () => {
+		const parsed = parseQuaestio(`${SINGLE}\nanswer-checked: true`);
+		expect(parsed.ok).toBe(true);
+		if (!parsed.ok) return;
+		expect(parsed.question.answerChecked).toBe(true);
+		expect(parsed.question.answerRevealed).toBe(false);
+	});
+
+	it("rejects an invalid answer-checked value", () => {
+		expect(parseQuaestio(`${SINGLE}\nanswer-checked: yes`).ok).toBe(false);
 	});
 });

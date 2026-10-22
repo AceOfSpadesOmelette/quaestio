@@ -149,14 +149,14 @@ check-answered
 check-all
 show-hide-all
 reset-all
-correct-score: Correct: {x} / {y} ({pct}%)
-incorrect-score: Incorrect: {x} / {y} ({pct}%)
-unanswered-score: Unanswered: {x} / {y} ({pct}%)
+correct-score: Correct: {count} / {total} ({pct}%)
+incorrect-score: Incorrect: {count} / {total} ({pct}%)
+unanswered-score: Unanswered: {count} / {total} ({pct}%)
 ```
 
 ```quaestio-dashboard
 live-update: false
 include-unanswered: false
-correct-score: Score: {x} out of {y}
-unanswered-score: Unanswered: {x} / {y}
+correct-score: Score: {count} out of {total}
+unanswered-score: Unanswered: {count} / {total}
 ```
