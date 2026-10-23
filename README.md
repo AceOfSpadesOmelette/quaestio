@@ -143,3 +143,11 @@ unanswered-score: Unanswered: {count} / {total} ({pct}%)
 | `unanswered-score` | Unanswered count. `{total}` is always the number of questions. |
 
 Action buttons sit on one wrapping row, then the score lines. Scores come from the current selections, not from whether Check was pressed. The buttons always run immediately. Only the score lines wait when live update is off.
+
+## Support
+
+[![Buy Me a Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/aceofspadesomelette)
+
+## Star history
+
+[![Star History Chart](https://api.star-history.com/svg?repos=AceOfSpadesOmelette/quaestio&type=Date)](https://www.star-history.com/#AceOfSpadesOmelette/quaestio&Date)
