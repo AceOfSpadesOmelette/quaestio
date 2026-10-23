@@ -397,10 +397,10 @@ class QuaestioWidget extends MarkdownRenderChild {
 
 		// Build the full interactive shell synchronously first so clicks work
 		// immediately — even while markdown labels are still rendering.
-		const title = this.root.createEl("div", { cls: "quaestio-title" });
-		const stem = this.root.createEl("div", { cls: "quaestio-stem" });
+		const title = this.root.createDiv( { cls: "quaestio-title" });
+		const stem = this.root.createDiv( { cls: "quaestio-stem" });
 
-		const optionsWrap = this.root.createEl("div", {
+		const optionsWrap = this.root.createDiv( {
 			cls: "quaestio-options",
 			attr: {
 				role: this.multi ? "group" : "radiogroup",
@@ -411,7 +411,7 @@ class QuaestioWidget extends MarkdownRenderChild {
 		for (const opt of this.question.options) {
 			// Use div (not button) so Obsidian theme button height/overflow rules
 			// cannot clip wrapped option text.
-			const btn = optionsWrap.createEl("div", {
+			const btn = optionsWrap.createDiv( {
 				cls: "quaestio-option",
 				attr: {
 					role: "button",
@@ -422,17 +422,17 @@ class QuaestioWidget extends MarkdownRenderChild {
 			});
 			if (opt.selected) btn.addClass("is-selected");
 
-			const marker = btn.createEl("span", { cls: "quaestio-option-marker" });
+			const marker = btn.createSpan( { cls: "quaestio-option-marker" });
 			if (opt.selected) marker.addClass("is-filled");
 
 			// Plain-text fallback until markdown finishes
-			const label = btn.createEl("span", { cls: "quaestio-option-label" });
+			const label = btn.createSpan( { cls: "quaestio-option-label" });
 			label.setText(opt.text);
 
 			this.optionEls.push(btn);
 		}
 
-		const actions = this.root.createEl("div", { cls: "quaestio-actions" });
+		const actions = this.root.createDiv( { cls: "quaestio-actions" });
 
 		actions.createEl("button", {
 			cls: "quaestio-btn quaestio-btn-check",
@@ -452,31 +452,31 @@ class QuaestioWidget extends MarkdownRenderChild {
 			text: "Reset",
 		});
 
-		this.resultEl = this.root.createEl("div", {
+		this.resultEl = this.root.createDiv( {
 			cls: "quaestio-result",
 			attr: { hidden: "true" },
 		});
 
-		this.revealEl = this.root.createEl("div", {
+		this.revealEl = this.root.createDiv( {
 			cls: "quaestio-reveal",
 			attr: { hidden: "true" },
 		});
 
-		const caLabel = this.revealEl.createEl("div", {
+		const caLabel = this.revealEl.createDiv( {
 			cls: "quaestio-section-label",
 		});
-		caLabel.setText("Correct Answer:");
+		caLabel.setText("Correct answer:");
 
-		const caBody = this.revealEl.createEl("div", {
+		const caBody = this.revealEl.createDiv( {
 			cls: "quaestio-correct-answer",
 		});
 
-		const explLabel = this.revealEl.createEl("div", {
+		const explLabel = this.revealEl.createDiv( {
 			cls: "quaestio-section-label",
 		});
 		explLabel.setText("Explanation:");
 
-		const explBody = this.revealEl.createEl("div", {
+		const explBody = this.revealEl.createDiv( {
 			cls: "quaestio-explanation",
 		});
 

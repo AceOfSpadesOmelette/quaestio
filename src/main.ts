@@ -41,7 +41,7 @@ export default class QuaestioPlugin extends Plugin {
 		);
 	}
 
-	async onunload(): Promise<void> {
-		await flushAllQuaestioSelections();
+	onunload(): void {
+		void flushAllQuaestioSelections();
 	}
 }

@@ -110,6 +110,8 @@ type ObsidianEl = HTMLElement & {
 		tag: string,
 		opts?: { cls?: string; text?: string; attr?: Record<string, string> },
 	): HTMLElement;
+	createDiv(opts?: { cls?: string; text?: string; attr?: Record<string, string> }): HTMLElement;
+	createSpan(opts?: { cls?: string; text?: string; attr?: Record<string, string> }): HTMLElement;
 };
 
 function installDomHelpers(): void {
@@ -132,16 +134,29 @@ function installDomHelpers(): void {
 	};
 	proto.createEl = function createEl(tag, opts) {
 		const el = document.createElement(tag);
-		if (opts?.cls) el.className = opts.cls;
-		if (opts?.text != null) el.textContent = opts.text;
-		if (opts?.attr) {
-			for (const [key, value] of Object.entries(opts.attr)) {
-				el.setAttribute(key, value);
-			}
-		}
+		applyOpts(el, opts);
 		this.appendChild(el);
 		return el;
 	};
+	proto.createDiv = function createDiv(opts) {
+		return this.createEl("div", opts);
+	};
+	proto.createSpan = function createSpan(opts) {
+		return this.createEl("span", opts);
+	};
+}
+
+function applyOpts(
+	el: HTMLElement,
+	opts?: { cls?: string; text?: string; attr?: Record<string, string> },
+): void {
+	if (opts?.cls) el.className = opts.cls;
+	if (opts?.text != null) el.textContent = opts.text;
+	if (opts?.attr) {
+		for (const [key, value] of Object.entries(opts.attr)) {
+			el.setAttribute(key, value);
+		}
+	}
 }
 
 installDomHelpers();

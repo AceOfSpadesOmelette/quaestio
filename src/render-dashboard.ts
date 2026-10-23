@@ -104,7 +104,7 @@ class DashboardView extends MarkdownRenderChild {
 				endActions();
 				const kind = item.kind as ScoreKind;
 				const format = "format" in item ? item.format : "";
-				const el = root.createEl("div", { cls: "quaestio-dashboard-score" });
+				const el = root.createDiv( { cls: "quaestio-dashboard-score" });
 				this.scoreRows.push({ el, kind, format });
 				continue;
 			}

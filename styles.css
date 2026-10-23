@@ -50,28 +50,29 @@
 
 /* Beat Obsidian theme `button` rules that fix height and clip wrapped text */
 button.quaestio-option,
-.quaestio-option {
-	display: flex !important;
+.markdown-preview-view .quaestio-option,
+.markdown-source-view .quaestio-option {
+	display: flex;
 	align-items: flex-start;
 	gap: 0.55em;
 	width: 100%;
 	max-width: 100%;
-	height: auto !important;
-	min-height: 0 !important;
-	max-height: none !important;
+	height: auto;
+	min-height: 0;
+	max-height: none;
 	box-sizing: border-box;
 	text-align: left;
-	padding: 0.55em 0.7em !important;
+	padding: 0.55em 0.7em;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 6px;
 	background: var(--background-primary);
 	color: var(--text-normal);
 	cursor: pointer;
 	font: inherit;
-	line-height: 1.4 !important;
-	white-space: normal !important;
-	overflow: visible !important;
-	text-overflow: unset !important;
+	line-height: 1.4;
+	white-space: normal;
+	overflow: visible;
+	text-overflow: unset;
 	user-select: none;
 	-webkit-user-select: none;
 	touch-action: manipulation;
@@ -138,25 +139,29 @@ button.quaestio-option,
 	background: var(--text-normal);
 }
 
-.quaestio-option-label {
+.markdown-preview-view .quaestio-option-label,
+.markdown-source-view .quaestio-option-label {
 	flex: 1 1 auto;
 	min-width: 0;
 	max-width: 100%;
-	height: auto !important;
-	overflow: visible !important;
+	height: auto;
+	overflow: visible;
 	line-height: 1.4;
-	white-space: normal !important;
+	white-space: normal;
 	overflow-wrap: break-word;
 	word-wrap: break-word;
 	word-break: break-word;
 }
 
-.quaestio-option-label p,
-.quaestio-option-label li,
-.quaestio-option-label span {
+.markdown-preview-view .quaestio-option-label p,
+.markdown-preview-view .quaestio-option-label li,
+.markdown-preview-view .quaestio-option-label span,
+.markdown-source-view .quaestio-option-label p,
+.markdown-source-view .quaestio-option-label li,
+.markdown-source-view .quaestio-option-label span {
 	margin: 0;
 	line-height: 1.4;
-	white-space: normal !important;
+	white-space: normal;
 	overflow-wrap: break-word;
 	word-break: break-word;
 }
